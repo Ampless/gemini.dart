@@ -1,26 +1,31 @@
 #!/usr/bin/env dart run
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
 class CheckingFile {
   String path;
-  List<int> hash;
+  String hash;
   int size;
 
   CheckingFile({required this.path, required this.hash, required this.size});
 
   static Future<CheckingFile> read(File file) async => CheckingFile(
         path: file.path,
-        hash: sha512.convert(await file.readAsBytes()).bytes,
+        hash: sha512
+            .convert(await file.readAsBytes())
+            .bytes
+            .map((e) => e.toRadixString(16).padLeft(2, '0'))
+            .reduce((v1, v2) => v1 + v2),
         size: await file.length(),
       );
 
-  @override
-  String toString() => '{"$path",$size,'
-      '${hash.first.toRadixString(16).padLeft(2, '0')}..'
-      '${hash.last.toRadixString(16).padLeft(2, '0')}}';
+  dynamic toJson() => {'path': path, 'size': size, 'hash': hash};
+
+  static CheckingFile fromJson(dynamic json) =>
+      CheckingFile(path: json['path'], hash: json['hash'], size: json['size']);
 }
 
 Future<List<CheckingFile>> readFiles(Directory dir) async {
@@ -39,6 +44,10 @@ Future<List<CheckingFile>> readFiles(Directory dir) async {
 
 void main(List<String> arguments) async {
   for (final dir in arguments) {
-    print(await readFiles(Directory(dir)));
+    print(
+      jsonEncode(
+        (await readFiles(Directory(dir))).map((e) => e.toJson()).toList(),
+      ),
+    );
   }
 }
