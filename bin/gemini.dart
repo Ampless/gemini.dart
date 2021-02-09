@@ -26,6 +26,8 @@ class CheckingFile {
 
   static CheckingFile fromJson(dynamic json) =>
       CheckingFile(path: json['path'], hash: json['hash'], size: json['size']);
+
+  bool isDuplicateOf(CheckingFile o) => o.hash == hash && o.size == size;
 }
 
 Future<List<CheckingFile>> readFiles(Directory dir) async {
@@ -43,11 +45,20 @@ Future<List<CheckingFile>> readFiles(Directory dir) async {
 }
 
 void main(List<String> arguments) async {
+  var files = <CheckingFile>[];
   for (final dir in arguments) {
-    print(
-      jsonEncode(
-        (await readFiles(Directory(dir))).map((e) => e.toJson()).toList(),
-      ),
-    );
+    files.addAll(await readFiles(Directory(dir)));
+  }
+  files = files.where((element) => element.size > 1024).toList();
+  while (files.isNotEmpty) {
+    final file = files.first;
+    final dups = files.where((f) => f.isDuplicateOf(file));
+    if (dups.length > 1) {
+      print('${file.hash}:');
+      for (final d in dups) {
+        print('    ${d.path}');
+      }
+    }
+    files.removeWhere((f) => f.isDuplicateOf(file));
   }
 }
