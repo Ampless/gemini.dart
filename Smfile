@@ -1,0 +1,3 @@
+all {
+    !dart compile exe bin/gemini.dart
+}
