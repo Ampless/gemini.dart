@@ -22,25 +22,28 @@ class CheckingFile {
   bool isDuplicateOf(CheckingFile o) => o.hash == hash && o.size == size;
 }
 
-Future<List<CheckingFile>> readFiles(Directory dir) async {
-  final files = <CheckingFile>[];
+Stream<CheckingFile> readFiles(Directory dir) async* {
   for (final fse in await dir.list().toList()) {
     if (fse is Directory) {
-      files.addAll(await readFiles(fse));
+      yield* readFiles(fse);
     } else if (fse is File) {
-      files.add(await CheckingFile.read(fse));
+      yield await CheckingFile.read(fse);
     } else {
       throw 'file system entry is neither file nor dir: ${fse.runtimeType}';
     }
   }
-  return files;
+}
+
+Stream<T> flatten<T>(Iterable<Stream<T>> s) async* {
+  for (final i in s) {
+    yield* i;
+  }
 }
 
 // TODO: no arguments causes a crash
 void main(List<String> arguments) async {
-  final rf = await Future.wait(arguments.map((d) => readFiles(Directory(d))));
-  var files = rf.reduce((v, e) => [...v, ...e]);
-  files = files.where((e) => e.size > 1024).toList();
+  final rf = arguments.map((d) => readFiles(Directory(d)));
+  final files = await flatten(rf).where((e) => e.size > 1024).toList();
   while (files.isNotEmpty) {
     final file = files.first;
     final dups = files.where((f) => f.isDuplicateOf(file));
