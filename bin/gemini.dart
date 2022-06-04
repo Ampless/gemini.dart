@@ -1,6 +1,3 @@
-#!/usr/bin/env dart run
-
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -22,11 +19,6 @@ class CheckingFile {
         size: await file.length(),
       );
 
-  dynamic toJson() => {'path': path, 'size': size, 'hash': hash};
-
-  static CheckingFile fromJson(dynamic json) =>
-      CheckingFile(path: json['path'], hash: json['hash'], size: json['size']);
-
   bool isDuplicateOf(CheckingFile o) => o.hash == hash && o.size == size;
 }
 
@@ -38,26 +30,23 @@ Future<List<CheckingFile>> readFiles(Directory dir) async {
     } else if (fse is File) {
       files.add(await CheckingFile.read(fse));
     } else {
-      throw 'WTF A FSE IS SOMETHING WEIRD (${fse.runtimeType})';
+      throw 'file system entry is neither file nor dir: ${fse.runtimeType}';
     }
   }
   return files;
 }
 
+// TODO: no arguments causes a crash
 void main(List<String> arguments) async {
-  var files = <CheckingFile>[];
-  for (final dir in arguments) {
-    files.addAll(await readFiles(Directory(dir)));
-  }
-  files = files.where((element) => element.size > 1024).toList();
+  final rf = await Future.wait(arguments.map((d) => readFiles(Directory(d))));
+  var files = rf.reduce((v, e) => [...v, ...e]);
+  files = files.where((e) => e.size > 1024).toList();
   while (files.isNotEmpty) {
     final file = files.first;
     final dups = files.where((f) => f.isDuplicateOf(file));
     if (dups.length > 1) {
       print('${file.hash}:');
-      for (final d in dups) {
-        print('    ${d.path}');
-      }
+      dups.map((d) => '    ${d.path}').forEach(print);
     }
     files.removeWhere((f) => f.isDuplicateOf(file));
   }
