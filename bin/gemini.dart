@@ -22,12 +22,12 @@ class CheckingFile {
   bool isDuplicateOf(CheckingFile o) => o.hash == hash && o.size == size;
 }
 
-Stream<CheckingFile> readFiles(Directory dir) async* {
+Stream<Future<CheckingFile>> readFiles(Directory dir) async* {
   for (final fse in await dir.list().toList()) {
     if (fse is Directory) {
       yield* readFiles(fse);
     } else if (fse is File) {
-      yield await CheckingFile.read(fse);
+      yield CheckingFile.read(fse);
     } else {
       throw 'file system entry is neither file nor dir: ${fse.runtimeType}';
     }
@@ -40,10 +40,11 @@ Stream<T> flatten<T>(Iterable<Stream<T>> s) async* {
   }
 }
 
-// TODO: no arguments causes a crash
-void main(List<String> arguments) async {
-  final rf = arguments.map((d) => readFiles(Directory(d)));
-  final files = await flatten(rf).where((e) => e.size > 1024).toList();
+// TODO: think about a default like (args = []) ⇒ (args ← ['.'])
+void main(List<String> args) async {
+  final rf = await flatten(args.map((d) => readFiles(Directory(d)))).toList();
+  final files =
+      await Future.wait(rf).then((f) => f.where((e) => e.size > 1024).toList());
   while (files.isNotEmpty) {
     final file = files.first;
     final dups = files.where((f) => f.isDuplicateOf(file));
