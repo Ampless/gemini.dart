@@ -1,21 +1,19 @@
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
+import 'package:proper_filesize/proper_filesize.dart';
+import 'package:to_hex_string/to_hex_string.dart';
+import 'package:xxh3/xxh3.dart';
 
 class CheckingFile {
   String path;
-  String hash;
+  int hash;
   int size;
 
   CheckingFile({required this.path, required this.hash, required this.size});
 
   static Future<CheckingFile> read(File file) async => CheckingFile(
         path: file.path,
-        hash: sha512
-            .convert(await file.readAsBytes())
-            .bytes
-            .map((e) => e.toRadixString(16).padLeft(2, '0'))
-            .reduce((v1, v2) => v1 + v2),
+        hash: await file.readAsBytes().then(xxh3),
         size: await file.length(),
       );
 
@@ -49,7 +47,8 @@ void main(List<String> args) async {
     final file = files.first;
     final dups = files.where((f) => f.isDuplicateOf(file));
     if (dups.length > 1) {
-      print('${file.hash}:');
+      print('${file.hash.toHexString(pad: true)} '
+          '(${ProperFilesize.generateHumanReadableFilesize(file.size, decimals: 0)}):');
       dups.map((d) => '    ${d.path}').forEach(print);
     }
     files.removeWhere((f) => f.isDuplicateOf(file));
