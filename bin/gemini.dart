@@ -28,8 +28,9 @@ Stream<Future<CheckingFile>> readFiles(Directory dir) async* {
       yield* readFiles(fse);
     } else if (fse is File) {
       yield CheckingFile.read(fse);
+    } else if (fse is Link) {
     } else {
-      throw 'file system entry is neither file nor dir: ${fse.runtimeType}';
+      throw 'file system entry is neither file nor dir nor link: ${fse.runtimeType}';
     }
   }
 }
