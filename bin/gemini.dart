@@ -44,8 +44,7 @@ Stream<T> flatten<T>(Iterable<Stream<T>> s) async* {
 // TODO: think about a default like (args = []) ⇒ (args ← ['.'])
 void main(List<String> args) async {
   final rf = await flatten(args.map((d) => readFiles(Directory(d)))).toList();
-  final files =
-      await Future.wait(rf).then((f) => f.where((e) => e.size > 1024).toList());
+  final files = await Future.wait(rf);
   while (files.isNotEmpty) {
     final file = files.first;
     final dups = files.where((f) => f.isDuplicateOf(file));
