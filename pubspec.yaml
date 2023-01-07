@@ -1,6 +1,6 @@
 name: gemini
-description: A command-line application for finding duplicate files.
-version: 1.1.0
+description: command-line application for finding duplicate files.
+version: 2.0.0
 homepage: https://github.com/Ampless/gemini
 
 environment:
@@ -10,9 +10,10 @@ executables:
   gemini: gemini
 
 dependencies:
+  args: ^2.3.1
   proper_filesize: ^0.0.2
   to_hex_string: ^1.0.0
   xxh3: ^1.0.1
 
 dev_dependencies:
-  lints: ^2.0.0
+  lints: ^2.0.1
