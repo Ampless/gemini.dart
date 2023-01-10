@@ -1,3 +1,7 @@
+## 2.1.0
+
+- Added `--min-size`/`-m` flag (empty files are no longer duplicates by default)
+
 ## 2.0.0
 
 - Added `--verbose`/`-v` flag

@@ -29,12 +29,14 @@ Stream<MapEntry<String, int>> readFiles(Directory dir) async* {
 
 /// gives us a map: size → set (path, hash)
 /// automatically filters for everything that is at least a duplicate
+/// filters out everything below [minSize]
 Map<int, Set<MapEntry<String, int?>>> orderAndHash(
-    Iterable<MapEntry<String, int>> sizes) {
+    Iterable<MapEntry<String, int>> sizes, num minSize) {
   final files = <int, Set<MapEntry<String, int?>>>{};
   for (final file in sizes) {
     final size = file.value;
-    if (!files.containsKey(size)) {
+    if (size < minSize) {
+    } else if (!files.containsKey(size)) {
       files[size] = {MapEntry(file.key, null)};
     } else {
       if (files[size]!.length < 2) {
@@ -46,6 +48,7 @@ Map<int, Set<MapEntry<String, int?>>> orderAndHash(
           };
         } catch (e, st) {
           stderr.writeln('orderAndHash(${file.key}/)\n$e\n$st');
+          // TODO: i think we need to remove
         }
       }
       // NOTE: this could be optimized to not hash if we couldn't hash `first`
@@ -88,6 +91,12 @@ extension NotEmptyOr<T> on Iterable<T> {
   Iterable<T> notEmptyOr(T e) => isEmpty ? [e] : this;
 }
 
+num parseFilesize(String s) {
+  final u = s.toUpperCase();
+  s = (u.endsWith('B') ? u : '${u}B').replaceAll('I', 'i');
+  return ProperFilesize.parseHumanReadableFilesize(s);
+}
+
 void main(List<String> arguments) async {
   final parser = ArgParser()
     // TODO: add options like comparing names/only sizes/...
@@ -95,6 +104,10 @@ void main(List<String> arguments) async {
     // TODO:
     //..addFlag('zeros',
     //    abbr: '0', help: 'show all zero length files as duplicates')
+    ..addOption('min-size',
+        abbr: 'm',
+        help: 'all files below this size are ignored',
+        defaultsTo: '1')
     ..addFlag('help',
         abbr: 'h', help: 'displays usage and options', negatable: false);
   args = parser.parse(arguments);
@@ -109,7 +122,8 @@ void main(List<String> arguments) async {
       .notEmptyOr(Directory.current)
       .map(readFiles)
       .flatten();
-  final allFiles = await rf.toList().then(orderAndHash);
+  final allFiles =
+      orderAndHash(await rf.toList(), parseFilesize(args['min-size']));
   for (final files in allFiles.entries) {
     if (files.value.length < 2) continue;
     final hashes = orderByHash(files.value);
