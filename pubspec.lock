@@ -5,36 +5,41 @@ packages:
     dependency: "direct main"
     description:
       name: args
-      url: "https://pub.dartlang.org"
+      sha256: "139d809800a412ebb26a3892da228b2d0ba36f0ef5d9a82166e5e52ec8d61611"
+      url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   lints:
     dependency: "direct dev"
     description:
       name: lints
-      url: "https://pub.dartlang.org"
+      sha256: "5e4a9cd06d447758280a8ac2405101e0e2094d2a1dbdd3756aec3fe7775ba593"
+      url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
   proper_filesize:
     dependency: "direct main"
     description:
       name: proper_filesize
-      url: "https://pub.dartlang.org"
+      sha256: bd7566ec10e0425b3b6f81691cce9a6d16c08e590ae15b2df0a1c22f432dc205
+      url: "https://pub.dev"
     source: hosted
     version: "0.0.2"
   to_hex_string:
     dependency: "direct main"
     description:
       name: to_hex_string
-      url: "https://pub.dartlang.org"
+      sha256: "7dcb602d8450e43a2fa0ab52de7d9fdaac9544d3d88afa7e51195bd0205a1245"
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
   xxh3:
     dependency: "direct main"
     description:
       name: xxh3
-      url: "https://pub.dartlang.org"
+      sha256: a92b30944a9aeb4e3d4f3c3d4ddb3c7816ca73475cd603682c4f8149690f56d7
+      url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
 sdks:
-  dart: ">=2.17.0 <3.0.0"
+  dart: ">=2.18.0 <4.0.0"

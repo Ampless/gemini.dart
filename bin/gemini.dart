@@ -30,7 +30,7 @@ Stream<MapEntry<String, int>> readFiles(Directory dir) async* {
 /// gives us a map: size → set (path, hash)
 /// automatically filters for everything that is at least a duplicate
 /// filters out everything below [minSize]
-Map<int, Set<MapEntry<String, int?>>> orderAndHash(
+Map<int, Iterable<MapEntry<String, int?>>> orderAndHash(
     Iterable<MapEntry<String, int>> sizes, num minSize) {
   final files = <int, Set<MapEntry<String, int?>>>{};
   for (final file in sizes) {
@@ -97,13 +97,18 @@ num parseFilesize(String s) {
   return ProperFilesize.parseHumanReadableFilesize(s);
 }
 
+Bases deduceBase(String s) {
+  s = s.toLowerCase();
+  final bin = s.contains(RegExp('[c-z]')) ? s.contains('i') : true;
+  return bin ? Bases.Binary : Bases.Metric;
+}
+
 void main(List<String> arguments) async {
   final parser = ArgParser()
     // TODO: add options like comparing names/only sizes/...
     ..addFlag('verbose', abbr: 'v', help: 'print everything we do')
     // TODO:
-    //..addFlag('zeros',
-    //    abbr: '0', help: 'show all zero length files as duplicates')
+    //..addFlag('zeros', abbr: '0', help: 'show all empty files as duplicates')
     ..addOption('min-size',
         abbr: 'm',
         help: 'all files below this size are ignored',
@@ -119,6 +124,7 @@ void main(List<String> arguments) async {
   }
   final rf = args.rest
       .map(Directory.new)
+      // FIXME: this causes absolute paths
       .notEmptyOr(Directory.current)
       .map(readFiles)
       .flatten();
@@ -130,7 +136,7 @@ void main(List<String> arguments) async {
     for (final hash in hashes.entries) {
       if (hash.value.length < 2) continue;
       print('${hash.key.toHexString(pad: true)} '
-          '(${ProperFilesize.generateHumanReadableFilesize(files.key, decimals: 0)}):');
+          '(${ProperFilesize.generateHumanReadableFilesize(files.key, decimals: 0, base: deduceBase(args['min-size']))}):');
       hash.value.map((d) => '    $d').forEach(print);
     }
   }
