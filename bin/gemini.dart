@@ -10,14 +10,14 @@ void log(Object? o) {
   if (args['verbose']) stderr.writeln(o);
 }
 
-Stream<MapEntry<String, int>> readFiles(Directory dir) async* {
+Stream<(String, int)> readFiles(Directory dir) async* {
   try {
     await for (final fse in dir.list(followLinks: false)) {
       log('Listing: ${fse.absolute.path}');
       if (fse is Directory) {
         yield* readFiles(fse);
       } else if (fse is File) {
-        yield MapEntry(fse.path, await fse.length());
+        yield (fse.path, await fse.length());
       } else if (fse is! Link) {
         throw 'file system entry is neither file nor dir nor link: ${fse.runtimeType}';
       }
@@ -28,37 +28,33 @@ Stream<MapEntry<String, int>> readFiles(Directory dir) async* {
 }
 
 /// gives us a map: size → set (path, hash)
-/// automatically filters for everything that is at least a duplicate
+/// automatically filters for everything that is at least a duplicate in size
 /// filters out everything below [minSize]
-Map<int, Iterable<MapEntry<String, int?>>> orderAndHash(
-    Iterable<MapEntry<String, int>> sizes, num minSize) {
-  final files = <int, Set<MapEntry<String, int?>>>{};
-  for (final file in sizes) {
-    final size = file.value;
+Map<int, Iterable<(String, int?)>> orderAndHash(
+    Iterable<(String, int)> sizes, num minSize) {
+  final files = <int, Set<(String, int?)>>{};
+  for (final (path, size) in sizes) {
     if (size < minSize) {
     } else if (!files.containsKey(size)) {
-      files[size] = {MapEntry(file.key, null)};
+      files[size] = {(path, null)};
     } else {
       if (files[size]!.length < 2) {
         final file = files[size]!.first;
         try {
-          log('Hashing: ${file.key}');
-          files[size] = {
-            MapEntry(file.key, xxh3(File(file.key).readAsBytesSync()))
-          };
+          log('Hashing: ${file.$1}');
+          files[size] = {(file.$1, xxh3(File(file.$1).readAsBytesSync()))};
         } catch (e, st) {
-          stderr.writeln('orderAndHash(${file.key}/)\n$e\n$st');
+          stderr.writeln('orderAndHash(${file.$1}/)\n$e\n$st');
           // TODO: i think we need to remove
         }
       }
       // NOTE: this could be optimized to not hash if we couldn't hash `first`
       //       but that is such an edge case let's ignore it for now
       try {
-        log('Hashing: ${file.key}');
-        files[size]!
-            .add(MapEntry(file.key, xxh3(File(file.key).readAsBytesSync())));
+        log('Hashing: $path');
+        files[size]!.add((path, xxh3(File(path).readAsBytesSync())));
       } catch (e, st) {
-        stderr.writeln('orderAndHash(${file.key}/)\n$e\n$st');
+        stderr.writeln('orderAndHash($path/)\n$e\n$st');
       }
     }
   }
@@ -66,14 +62,13 @@ Map<int, Iterable<MapEntry<String, int?>>> orderAndHash(
   return files;
 }
 
-Map<int, Set<String>> orderByHash(Iterable<MapEntry<String, int?>> files) {
+Map<int, Set<String>> orderByHash(Iterable<(String, int?)> files) {
   final hashes = <int, Set<String>>{};
-  for (final file in files) {
-    int hash = file.value!;
-    if (!hashes.containsKey(hash)) {
-      hashes[hash] = {file.key};
+  for (final (path, hash) in files) {
+    if (hashes.containsKey(hash)) {
+      hashes[hash]!.add(path);
     } else {
-      hashes[hash]!.add(file.key);
+      hashes[hash!] = {path};
     }
   }
   return hashes;
@@ -113,6 +108,8 @@ void main(List<String> arguments) async {
         abbr: 'm',
         help: 'all files below this size are ignored',
         defaultsTo: '1')
+    // TODO: ignore system
+    // TODO: --version
     ..addFlag('help',
         abbr: 'h', help: 'displays usage and options', negatable: false);
   args = parser.parse(arguments);

@@ -1,3 +1,7 @@
+## 2.1.1
+
+- Improve everything using Dart 3
+
 ## 2.1.0
 
 - Added `--min-size`/`-m` flag (empty files are no longer duplicates by default)

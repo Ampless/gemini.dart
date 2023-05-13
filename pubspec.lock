@@ -5,18 +5,18 @@ packages:
     dependency: "direct main"
     description:
       name: args
-      sha256: "139d809800a412ebb26a3892da228b2d0ba36f0ef5d9a82166e5e52ec8d61611"
+      sha256: c372bb384f273f0c2a8aaaa226dad84dc27c8519a691b888725dec59518ad53a
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.2"
+    version: "2.4.1"
   lints:
     dependency: "direct dev"
     description:
       name: lints
-      sha256: "5e4a9cd06d447758280a8ac2405101e0e2094d2a1dbdd3756aec3fe7775ba593"
+      sha256: "6b0206b0bf4f04961fc5438198ccb3a885685cd67d4d4a32cc20ad7f8adbe015"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "2.1.0"
   proper_filesize:
     dependency: "direct main"
     description:
@@ -42,4 +42,4 @@ packages:
     source: hosted
     version: "1.0.1"
 sdks:
-  dart: ">=2.18.0 <4.0.0"
+  dart: ">=3.0.0 <4.0.0"
