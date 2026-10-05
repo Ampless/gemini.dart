@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:crypto/crypto.dart';
 import 'package:proper_filesize/proper_filesize.dart';
 import 'package:to_hex_string/to_hex_string.dart';
 import 'package:xxh3/xxh3.dart';
@@ -10,16 +12,42 @@ void log(Object? o) {
   if (args['verbose']) stderr.writeln(o);
 }
 
+Future<bool> isSmbSymlink(File file, int size) async {
+  // Minshall+French SMB links use a fixed 1067-byte file.
+  if (size != 1067) return false;
+  final handle = await file.open();
+  try {
+    final bytes = await handle.read(1067);
+    if (bytes.length != 1067) return false;
+    final header = RegExp(r'^XSym\n([0-9]{4})\n([0-9a-f]{32})\n')
+        .firstMatch(latin1.decode(bytes));
+    if (header == null) return false;
+    final length = int.parse(header[1]!);
+    if (length < 1 || length > 1024) return false;
+    final target = bytes.sublist(header.end, header.end + length);
+    return md5.convert(target).toString() == header[2];
+  } finally {
+    await handle.close();
+  }
+}
+
 Stream<(String, int)> readFiles(Directory dir) async* {
   try {
-    await for (final fse in dir.list(followLinks: false)) {
-      log('Listing: ${fse.absolute.path}');
-      if (fse is Directory) {
-        yield* readFiles(fse);
-      } else if (fse is File) {
-        yield (fse.path, await fse.length());
-      } else if (fse is! Link) {
-        throw 'file system entry is neither file nor dir nor link: ${fse.runtimeType}';
+    await for (final path in dir.list(followLinks: false).map((x) => x.path)) {
+      log('Listing: $path');
+      final type = await FileSystemEntity.type(path, followLinks: false);
+      if (type == FileSystemEntityType.directory) {
+        yield* readFiles(Directory(path));
+      } else if (type == FileSystemEntityType.file) {
+        final file = File(path);
+        final size = await file.length();
+        if (!await isSmbSymlink(file, size)) yield (path, size);
+      } else if (type == FileSystemEntityType.notFound) {
+        stderr.writeln('File $path does not exist');
+      } else if (type == FileSystemEntityType.unixDomainSock ||
+          type == FileSystemEntityType.pipe) {
+      } else if (type != FileSystemEntityType.link) {
+        throw 'file system entry is neither file nor dir nor link: $type';
       }
     }
   } catch (e, st) {
