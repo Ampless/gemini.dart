@@ -5,41 +5,41 @@ packages:
     dependency: "direct main"
     description:
       name: args
-      sha256: c372bb384f273f0c2a8aaaa226dad84dc27c8519a691b888725dec59518ad53a
+      sha256: d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.7.0"
   lints:
     dependency: "direct dev"
     description:
       name: lints
-      sha256: "6b0206b0bf4f04961fc5438198ccb3a885685cd67d4d4a32cc20ad7f8adbe015"
+      sha256: "12f842a479589fea194fe5c5a3095abc7be0c1f2ddfa9a0e76aed1dbd26a87df"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "6.1.0"
   proper_filesize:
     dependency: "direct main"
     description:
       name: proper_filesize
-      sha256: bd7566ec10e0425b3b6f81691cce9a6d16c08e590ae15b2df0a1c22f432dc205
+      sha256: "5426f6698aa6a189d5475bcf189020cf5a3661e3ff389bc46551e32b0279164e"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.2"
+    version: "1.0.2"
   to_hex_string:
     dependency: "direct main"
     description:
       name: to_hex_string
-      sha256: "7dcb602d8450e43a2fa0ab52de7d9fdaac9544d3d88afa7e51195bd0205a1245"
+      sha256: "94f1daa3f7de832f8436335449b9fd3a111049f3229e3f66845e55c1507c2a21"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.0.1"
   xxh3:
     dependency: "direct main"
     description:
       name: xxh3
-      sha256: a92b30944a9aeb4e3d4f3c3d4ddb3c7816ca73475cd603682c4f8149690f56d7
+      sha256: "399a0438f5d426785723c99da6b16e136f4953fb1e9db0bf270bd41dd4619916"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.2.0"
 sdks:
-  dart: ">=3.0.0 <4.0.0"
+  dart: ">=3.8.0 <4.0.0"

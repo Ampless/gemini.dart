@@ -87,15 +87,15 @@ extension NotEmptyOr<T> on Iterable<T> {
 }
 
 num parseFilesize(String s) {
-  final u = s.toUpperCase();
-  s = (u.endsWith('B') ? u : '${u}B').replaceAll('I', 'i');
-  return ProperFilesize.parseHumanReadableFilesize(s);
+  s = s.toUpperCase();
+  s = (s.endsWith('B') ? s : '${s}B').replaceAll('I', 'i');
+  return FileSize.parse(s).size;
 }
 
-Bases deduceBase(String s) {
+BaseType deduceBase(String s) {
   s = s.toLowerCase();
   final bin = s.contains(RegExp('[c-z]')) ? s.contains('i') : true;
-  return bin ? Bases.Binary : Bases.Metric;
+  return bin ? BaseType.binary : BaseType.metric;
 }
 
 void main(List<String> arguments) async {
@@ -132,8 +132,10 @@ void main(List<String> arguments) async {
     final hashes = orderByHash(files.value);
     for (final hash in hashes.entries) {
       if (hash.value.length < 2) continue;
+      final unit =
+          Unit.auto(size: files.key, baseType: deduceBase(args['min-size']));
       print('${hash.key.toHexString(pad: true)} '
-          '(${ProperFilesize.generateHumanReadableFilesize(files.key, decimals: 0, base: deduceBase(args['min-size']))}):');
+          '(${FileSize.fromBytes(files.key).toString(decimals: 0, unit: unit)}):');
       hash.value.map((d) => '    $d').forEach(print);
     }
   }
