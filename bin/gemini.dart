@@ -23,7 +23,11 @@ Stream<(String, int)> readFiles(Directory dir) async* {
       }
     }
   } catch (e, st) {
-    stderr.writeln('readFiles $dir\n$e\n$st');
+    if (args['fail']) {
+      rethrow;
+    } else {
+      stderr.writeln('readFiles $dir\n$e\n$st');
+    }
   }
 }
 
@@ -102,6 +106,7 @@ void main(List<String> arguments) async {
   final parser = ArgParser()
     // TODO: add options like comparing names/only sizes/...
     ..addFlag('verbose', abbr: 'v', help: 'print everything we do')
+    ..addFlag('fail', abbr: 'f', help: 'fail on file scanning errors')
     // TODO:
     //..addFlag('zeros', abbr: '0', help: 'show all empty files as duplicates')
     ..addOption('min-size',
