@@ -33,12 +33,12 @@ Stream<(String, int)> readFiles(Directory dir) async* {
 
 /// gives us a map: size → set (path, hash)
 /// automatically filters for everything that is at least a duplicate in size
-/// filters out everything below [minSize]
+/// filters out everything below [minSize] or above [maxSize]
 Map<int, Iterable<(String, int?)>> orderAndHash(
-    Iterable<(String, int)> sizes, num minSize) {
+    Iterable<(String, int)> sizes, num minSize, num? maxSize) {
   final files = <int, Set<(String, int?)>>{};
   for (final (path, size) in sizes) {
-    if (size < minSize) {
+    if (size < minSize || (maxSize != null && size > maxSize)) {
     } else if (!files.containsKey(size)) {
       files[size] = {(path, null)};
     } else {
@@ -113,6 +113,8 @@ void main(List<String> arguments) async {
         abbr: 'm',
         help: 'all files below this size are ignored',
         defaultsTo: '1')
+    ..addOption('max-size',
+        abbr: 'M', help: 'all files above this size are ignored')
     // TODO: ignore system
     // TODO: --version
     ..addFlag('help',
@@ -130,8 +132,10 @@ void main(List<String> arguments) async {
       .notEmptyOr(Directory.current)
       .map(readFiles)
       .flatten();
-  final allFiles =
-      orderAndHash(await rf.toList(), parseFilesize(args['min-size']));
+  final allFiles = orderAndHash(
+      await rf.toList(),
+      parseFilesize(args['min-size']),
+      args['max-size'] == null ? null : parseFilesize(args['max-size']));
   for (final files in allFiles.entries) {
     if (files.value.length < 2) continue;
     final hashes = orderByHash(files.value);
