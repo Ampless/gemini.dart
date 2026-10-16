@@ -1,3 +1,9 @@
+## 2.2.0
+
+- Added `--fail`/`-f`, `--max-size`/`-M`, and `--skip-smb-symlinks` flags
+- We now use `stat` to properly detect "files" that aren't actually files
+- Upgraded dependencies (`proper_filesize` 1)
+
 ## 2.1.1
 
 - Improve everything using Dart 3
