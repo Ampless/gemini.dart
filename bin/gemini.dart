@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:crypto/crypto.dart';
 import 'package:proper_filesize/proper_filesize.dart';
 import 'package:to_hex_string/to_hex_string.dart';
 import 'package:xxh3/xxh3.dart';
@@ -10,16 +12,48 @@ void log(Object? o) {
   if (args['verbose']) stderr.writeln(o);
 }
 
+Future<bool> isSmbSymlink(File file, int size) async {
+  // Minshall+French links store XSym, target byte length, MD5, then target bytes.
+  if (size != 1067) return false;
+  final handle = await file.open();
+  try {
+    final bytes = await handle.read(1067);
+    if (bytes.length != 1067) return false;
+    final header = RegExp(r'^XSym\n([0-9]{4})\n([0-9a-f]{32})\n')
+        .firstMatch(latin1.decode(bytes));
+    if (header == null) return false;
+    final length = int.parse(header[1]!);
+    if (length < 1 || length > 1024) return false;
+    final target = bytes.sublist(header.end, header.end + length);
+    return md5.convert(target).toString() == header[2];
+  } finally {
+    await handle.close();
+  }
+}
+
 Stream<(String, int)> readFiles(Directory dir) async* {
   try {
     await for (final fse in dir.list(followLinks: false)) {
-      log('Listing: ${fse.absolute.path}');
-      if (fse is Directory) {
-        yield* readFiles(fse);
-      } else if (fse is File) {
-        yield (fse.path, await fse.length());
-      } else if (fse is! Link) {
-        throw 'file system entry is neither file nor dir nor link: ${fse.runtimeType}';
+      log('Listing: ${fse.path}');
+      try {
+        if (fse is Directory) {
+          yield* readFiles(fse);
+        } else if (fse is File) {
+          final stat = await fse.stat();
+          if (stat.type == FileSystemEntityType.notFound) {
+            throw FileSystemException('Cannot stat file', fse.path);
+          }
+          if (stat.type != FileSystemEntityType.file) continue;
+          if (!args['skip-smb-symlinks'] ||
+              !await isSmbSymlink(fse, stat.size)) {
+            yield (fse.path, stat.size);
+          }
+        } else if (fse is! Link) {
+          throw 'file system entry is neither file nor dir nor link: ${fse.runtimeType}';
+        }
+      } catch (e, st) {
+        if (args['fail']) rethrow;
+        stderr.writeln('readFiles $fse\n$e\n$st');
       }
     }
   } catch (e, st) {
@@ -107,6 +141,8 @@ void main(List<String> arguments) async {
     // TODO: add options like comparing names/only sizes/...
     ..addFlag('verbose', abbr: 'v', help: 'print everything we do')
     ..addFlag('fail', abbr: 'f', help: 'fail on file scanning errors')
+    ..addFlag('skip-smb-symlinks',
+        help: 'detect and skip Minshall+French SMB symlink files (slower)')
     // TODO:
     //..addFlag('zeros', abbr: '0', help: 'show all empty files as duplicates')
     ..addOption('min-size',
