@@ -13,7 +13,7 @@ void log(Object? o) {
 }
 
 Future<bool> isSmbSymlink(File file, int size) async {
-  // Minshall+French SMB links use a fixed 1067-byte file.
+  // Minshall+French links store XSym, target byte length, MD5, then target bytes.
   if (size != 1067) return false;
   final handle = await file.open();
   try {
@@ -33,21 +33,27 @@ Future<bool> isSmbSymlink(File file, int size) async {
 
 Stream<(String, int)> readFiles(Directory dir) async* {
   try {
-    await for (final path in dir.list(followLinks: false).map((x) => x.path)) {
-      log('Listing: $path');
-      final type = await FileSystemEntity.type(path, followLinks: false);
-      if (type == FileSystemEntityType.directory) {
-        yield* readFiles(Directory(path));
-      } else if (type == FileSystemEntityType.file) {
-        final file = File(path);
-        final size = await file.length();
-        if (!await isSmbSymlink(file, size)) yield (path, size);
-      } else if (type == FileSystemEntityType.notFound) {
-        stderr.writeln('File $path does not exist');
-      } else if (type == FileSystemEntityType.unixDomainSock ||
-          type == FileSystemEntityType.pipe) {
-      } else if (type != FileSystemEntityType.link) {
-        throw 'file system entry is neither file nor dir nor link: $type';
+    await for (final fse in dir.list(followLinks: false)) {
+      log('Listing: ${fse.path}');
+      try {
+        if (fse is Directory) {
+          yield* readFiles(fse);
+        } else if (fse is File) {
+          final stat = await fse.stat();
+          if (stat.type == FileSystemEntityType.notFound) {
+            throw FileSystemException('Cannot stat file', fse.path);
+          }
+          if (stat.type != FileSystemEntityType.file) continue;
+          if (!args['skip-smb-symlinks'] ||
+              !await isSmbSymlink(fse, stat.size)) {
+            yield (fse.path, stat.size);
+          }
+        } else if (fse is! Link) {
+          throw 'file system entry is neither file nor dir nor link: ${fse.runtimeType}';
+        }
+      } catch (e, st) {
+        if (args['fail']) rethrow;
+        stderr.writeln('readFiles $fse\n$e\n$st');
       }
     }
   } catch (e, st) {
@@ -135,6 +141,8 @@ void main(List<String> arguments) async {
     // TODO: add options like comparing names/only sizes/...
     ..addFlag('verbose', abbr: 'v', help: 'print everything we do')
     ..addFlag('fail', abbr: 'f', help: 'fail on file scanning errors')
+    ..addFlag('skip-smb-symlinks',
+        help: 'detect and skip Minshall+French SMB symlink files (slower)')
     // TODO:
     //..addFlag('zeros', abbr: '0', help: 'show all empty files as duplicates')
     ..addOption('min-size',
